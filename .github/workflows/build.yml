@@ -1,0 +1,57 @@
+name: Build Desktop App
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: animation-planner/package-lock.json
+
+      - name: Install dependencies
+        working-directory: animation-planner
+        run: npm ci
+
+      - name: Build app
+        working-directory: animation-planner
+        run: npm run electron:build
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Animation-Project-Planner-Windows
+          path: animation-planner/dist-desktop/*.exe
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: animation-planner/dist-desktop/*.exe
+          name: Animation Project Planner ${{ github.ref_name }}
+          body: |
+            ## Animation Project Planner
+
+            Download the `.exe` file below and run it - no installation needed (portable).
+
+            ### What's included
+            - Scene storyboard with drag-and-drop reordering
+            - Production stage tracking (Layout, Lookdev, Render, Comp)
+            - Budget & asset management
+            - Production schedule / Gantt timeline
+            - Reference image board with local file uploads
+            - Node editor canvas
+            - All data saved locally on your machine
